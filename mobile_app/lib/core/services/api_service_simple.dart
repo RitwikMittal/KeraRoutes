@@ -36,7 +36,7 @@ class ApiServiceSimple {
   Future<bool> testConnection() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/health'),
+        Uri.parse('$baseUrl/api/v1/health'),
         headers: _headers,
       ).timeout(const Duration(seconds: 5));
       return response.statusCode == 200;
