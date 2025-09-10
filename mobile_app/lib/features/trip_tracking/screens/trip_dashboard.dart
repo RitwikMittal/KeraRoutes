@@ -6,6 +6,7 @@ import '../../data_collection/screens/data_collection_screen.dart';
 import '../../analytics/screens/personal_analytics_screen.dart';
 import '../../gamification/screens/achievements_screen.dart';
 import '../../../shared/widgets/kerala_themed_card.dart';
+import '../../../shared/widgets/connection_test_widget.dart';
 
 class TripDashboard extends StatefulWidget {
   const TripDashboard({super.key});
@@ -171,6 +172,10 @@ class _TripDashboardState extends State<TripDashboard> {
               ),
             ),
           ),
+          const SizedBox(height: 16),
+
+          // Connection Test (for debugging)
+          const ConnectionTestWidget(),
           const SizedBox(height: 16),
 
           // Quick actions

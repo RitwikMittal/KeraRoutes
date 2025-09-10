@@ -10,15 +10,41 @@ class ApiServiceSimple {
   
   ApiServiceSimple._internal();
 
-  final String baseUrl = 'http://10.0.2.2:8000'; // Android emulator localhost
-  // For iOS simulator, use: 'http://localhost:8000'
-  // For real device, use your computer's IP: 'http://192.168.1.X:8000'
+  // Dynamic base URL based on platform and environment
+  String get baseUrl {
+    // For development, try multiple possible URLs
+    // You can change this based on your testing environment
+    
+    // Option 1: Android emulator
+    // return 'http://10.0.2.2:8000';
+    
+    // Option 2: iOS simulator or real device on same network
+    // Replace with your computer's actual IP address
+    return 'http://192.168.29.117:8000'; // Your computer's IP address
+    
+    // Option 3: If testing on same machine
+    // return 'http://localhost:8000';
+  }
 
   // Headers for API requests
   Map<String, String> get _headers => {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   };
+
+  // Test connectivity to backend
+  Future<bool> testConnection() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/health'),
+        headers: _headers,
+      ).timeout(const Duration(seconds: 5));
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Connection test failed: $e');
+      return false;
+    }
+  }
 
   // Generic API call handler
   Future<Map<String, dynamic>> _makeRequest(
@@ -28,43 +54,66 @@ class ApiServiceSimple {
   }) async {
     try {
       final uri = Uri.parse('$baseUrl$endpoint');
+      print('🌐 Making $method request to: $uri'); // Debug log
+      
       http.Response response;
 
       switch (method.toUpperCase()) {
         case 'GET':
-          response = await http.get(uri, headers: _headers);
+          response = await http.get(uri, headers: _headers)
+              .timeout(const Duration(seconds: 10));
           break;
         case 'POST':
+          print('📤 POST data: ${data != null ? json.encode(data) : 'null'}'); // Debug log
           response = await http.post(
             uri,
             headers: _headers,
             body: data != null ? json.encode(data) : null,
-          );
+          ).timeout(const Duration(seconds: 10));
           break;
         case 'PUT':
+          print('📤 PUT data: ${data != null ? json.encode(data) : 'null'}'); // Debug log
           response = await http.put(
             uri,
             headers: _headers,
             body: data != null ? json.encode(data) : null,
-          );
+          ).timeout(const Duration(seconds: 10));
           break;
         case 'DELETE':
-          response = await http.delete(uri, headers: _headers);
+          response = await http.delete(uri, headers: _headers)
+              .timeout(const Duration(seconds: 10));
           break;
         default:
           throw Exception('Unsupported HTTP method: $method');
       }
 
+      print('📥 Response status: ${response.statusCode}'); // Debug log
+      print('📥 Response body: ${response.body.length > 500 ? '${response.body.substring(0, 500)}...' : response.body}'); // Debug log
+
       if (response.statusCode >= 200 && response.statusCode < 300) {
         if (response.body.isEmpty) {
           return {'success': true, 'data': null};
         }
-        return json.decode(response.body);
+        try {
+          final jsonResponse = json.decode(response.body);
+          return {'success': true, 'data': jsonResponse};
+        } catch (e) {
+          print('❌ JSON decode error: $e');
+          return {'success': true, 'data': response.body};
+        }
       } else {
+        print('❌ HTTP Error ${response.statusCode}: ${response.body}');
         throw Exception('HTTP ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
-      print('API Error: $e');
+      print('❌ API Error: $e');
+      if (e.toString().contains('Failed to fetch') || e.toString().contains('SocketException')) {
+        return {
+          'success': false,
+          'error': 'Network connection failed. Please check if the backend is running at $baseUrl',
+          'data': null,
+        };
+      }
       return {
         'success': false,
         'error': e.toString(),

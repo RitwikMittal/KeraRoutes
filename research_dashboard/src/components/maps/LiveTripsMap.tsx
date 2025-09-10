@@ -76,7 +76,7 @@ const LiveTripsMap: React.FC = () => {
   const loadActiveTrips = async () => {
     try {
       const response = await get('/analytics/live/active-trips');
-      setActiveTrips(response.data || []);
+      setActiveTrips((response.data as any)?.active_trips || []);
     } catch (error) {
       console.error('Error loading active trips:', error);
     }
